@@ -1,0 +1,6 @@
+﻿services:
+  containerrfbot:
+    image: containerrfbot
+    build:
+      context: .
+      dockerfile: ContainerRfBot/Dockerfile

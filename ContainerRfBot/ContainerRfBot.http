@@ -1,0 +1,6 @@
+@ContainerRfBot_HostAddress = http://localhost:5189
+
+GET {{ContainerRfBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
