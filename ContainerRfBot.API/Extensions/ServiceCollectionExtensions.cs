@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ContainerRfBot.Core.Interfaces;
+using ContainerRfBot.Core.Interfaces.Settings;
 using ContainerRfBot.Core.UseCases;
 using ContainerRfBot.Infrastructure.DAL;
 using ContainerRfBot.Infrastructure.DAL.Repositories;
@@ -23,6 +24,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, DummyNotificationService>();
         
         services.AddHostedService<SubscriptionCheckJob>();
+        
+        services.AddSingleton<ISetting, Setting>();
         
         return services;
     }
