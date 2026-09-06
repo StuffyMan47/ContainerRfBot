@@ -1,5 +1,6 @@
 using ContainerRfBot.Bot.Services;
 using ContainerRfBot.Bot.Services.MaxBot;
+using ContainerRfBot.Bot.AiTunnelService;
 using ContainerRfBot.Core.Interfaces;
 using ContainerRfBot.Core.Interfaces.Settings;
 using Max.Bot;
@@ -23,6 +24,7 @@ public static class Startup
 
         services.AddScoped<MaxBotService>();
         services.AddScoped<INotificationService, MaxNotificationService>();
+        services.AddScoped<IAiTunnelClient, AiTunnelClient>();
 
         return services;
     }

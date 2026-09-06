@@ -1,7 +1,13 @@
+using System.Text.Json;
+using ContainerRfBot.Bot.AiTunnelService;
+using ContainerRfBot.Bot.AiTunnelService.Model;
 using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Enums;
 using ContainerRfBot.Core.Interfaces;
 using Max.Bot;
 using Max.Bot.Types;
+using Max.Bot.Types.Enums;
+using Max.Bot.Types.Requests;
 using Microsoft.Extensions.Logging;
 
 namespace ContainerRfBot.Bot.Services.MaxBot;
@@ -11,17 +17,20 @@ public class MaxBotService
     private readonly IUserRepository _userRepository;
     private readonly IMessageRepository _messageRepository;
     private readonly MaxClient _maxBotClient;
+    private readonly IAiTunnelClient _aiTunnelClient;
     private readonly ILogger<MaxBotService> _logger;
 
     public MaxBotService(
         IUserRepository userRepository,
         IMessageRepository messageRepository,
         MaxClient maxBotClient,
+        IAiTunnelClient aiTunnelClient,
         ILogger<MaxBotService> logger)
     {
         _userRepository = userRepository;
         _messageRepository = messageRepository;
         _maxBotClient = maxBotClient;
+        _aiTunnelClient = aiTunnelClient;
         _logger = logger;
     }
 
@@ -29,6 +38,12 @@ public class MaxBotService
     {
         try
         {
+            if (update.Callback != null)
+            {
+                await HandleCallbackAsync(update.Callback, cancellationToken);
+                return;
+            }
+
             if (update.Message is not { } message)
                 return;
 
@@ -37,9 +52,33 @@ public class MaxBotService
 
             if (maxUserId == null) return;
 
-            var userId = await SaveOrUpdateUserAsync(message.Sender!, cancellationToken);
+            var user = await SaveOrUpdateUserAsync(message.Sender!, cancellationToken);
 
-            await HandleMessage(userId, text, cancellationToken);
+            if (text == "/start")
+            {
+                await SendMainMenuAsync(user, cancellationToken);
+                return;
+            }
+
+            // Route based on state
+            if (user.State == BotState.WaitingForPhone)
+            {
+                user.PhoneNumber = text;
+                user.State = BotState.None;
+                await _userRepository.UpdateAsync(user, cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Номер телефона успешно обновлен!", cancellationToken: cancellationToken);
+                await SendMainMenuAsync(user, cancellationToken);
+                return;
+            }
+            
+            if (user.State == BotState.WaitingForAdDetails)
+            {
+                await HandleCreateAdMessage(user, update, message, cancellationToken);
+                return;
+            }
+
+            // Fallback
+            await HandleMessage(user, text, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -47,7 +86,98 @@ public class MaxBotService
         }
     }
 
-    private async Task<long> SaveOrUpdateUserAsync(Max.Bot.Types.User sender, CancellationToken cancellationToken)
+    private async Task HandleCallbackAsync(CallbackQuery callback, CancellationToken cancellationToken)
+    {
+        if (callback.User == null) return;
+
+        var user = await SaveOrUpdateUserAsync(callback.User, cancellationToken);
+        var payload = callback.Payload;
+
+        switch (payload)
+        {
+            case "profile":
+                var subText = user.HasSubscription && user.SubscriptionExpirationDate.HasValue 
+                    ? $"до {user.SubscriptionExpirationDate.Value:dd.MM.yyyy}" 
+                    : "отсутствует";
+                var phoneText = string.IsNullOrEmpty(user.PhoneNumber) ? "не указан" : user.PhoneNumber;
+                var profileMsg = $"Профиль пользователя\nПодписка: {subText}\nНомер телефона: {phoneText}";
+
+                var inlineKb = new InlineKeyboard
+                {
+                    Buttons = new[]
+                    {
+                        new[]
+                        {
+                            new InlineKeyboardButton
+                            {
+                                Text = "Изменить номер телефона",
+                                Type = ButtonType.Callback,
+                                Payload = "change_phone"
+                            }
+                        }
+                    }
+                };
+
+                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
+                {
+                    Text = profileMsg,
+                    Attachments = new AttachmentRequest[] 
+                    {
+                        new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", inlineKb.Buttons } } }
+                    }
+                }, user.Id, cancellationToken: cancellationToken);
+                break;
+
+            case "instruction":
+                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Здесь будет инструкция по использованию сервиса...", cancellationToken: cancellationToken);
+                break;
+
+            case "create_ad":
+                user.State = BotState.WaitingForAdDetails;
+                await _userRepository.UpdateAsync(user, cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", cancellationToken: cancellationToken);
+                break;
+
+            case "change_phone":
+                user.State = BotState.WaitingForPhone;
+                await _userRepository.UpdateAsync(user, cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Пожалуйста, введите ваш новый номер телефона:", cancellationToken: cancellationToken);
+                break;
+        }
+    }
+
+    private async Task SendMainMenuAsync(Core.Entities.User user, CancellationToken cancellationToken)
+    {
+        var inlineKb = new InlineKeyboard
+        {
+            Buttons = new[]
+            {
+                new[]
+                {
+                    new InlineKeyboardButton { Text = "Профиль", Type = ButtonType.Callback, Payload = "profile" }
+                },
+                new[]
+                {
+                    new InlineKeyboardButton { Text = "Инструкция", Type = ButtonType.Callback, Payload = "instruction" }
+                },
+                new[]
+                {
+                    new InlineKeyboardButton { Text = "Создать объявление о продаже", Type = ButtonType.Callback, Payload = "create_ad" }
+                }
+            }
+        };
+
+        await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
+        {
+            Text = "Главное меню",
+            Attachments = new AttachmentRequest[] 
+            {
+                new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", inlineKb.Buttons } } }
+            }
+        }, user.Id, cancellationToken: cancellationToken);
+    }
+
+    private async Task<Core.Entities.User> SaveOrUpdateUserAsync(Max.Bot.Types.User sender, CancellationToken cancellationToken)
     {
         var dbUser = await _userRepository.GetByIdAsync(sender.Id, cancellationToken);
 
@@ -57,23 +187,114 @@ public class MaxBotService
             {
                 Id = sender.Id,
                 IsAdmin = false,
-                HasSubscription = false
+                HasSubscription = false,
+                State = BotState.None
             };
             await _userRepository.AddAsync(dbUser, cancellationToken);
         }
 
-        return dbUser.Id;
+        return dbUser;
     }
 
-    private async Task HandleMessage(long userId, string text, CancellationToken cancellationToken)
+    private async Task HandleMessage(Core.Entities.User user, string text, CancellationToken cancellationToken)
     {
         var message = new Core.Entities.Message
         {
-            UserId = userId,
+            UserId = user.Id,
             Content = text,
             SentAt = DateTime.UtcNow
         };
 
         await _messageRepository.AddAsync(message, cancellationToken);
+    }
+
+    private async Task HandleCreateAdMessage(Core.Entities.User user, Update update, Max.Bot.Types.Message message, CancellationToken cancellationToken)
+    {
+        List<AiContainerResponse> objects = new List<AiContainerResponse>();
+        string result = null;
+        try
+        {
+            result = await _aiTunnelClient.SendMessage(message.Text ?? string.Empty);
+            objects = JsonSerializer.Deserialize<List<AiContainerResponse>>(result) ?? new List<AiContainerResponse>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при обработке сообщения в ai tunnel");
+            await _maxBotClient.Messages.SendMessageAsync(user.Id, "Произошла ошибка при обработке вашего сообщения.", cancellationToken: cancellationToken);
+            return;
+        }
+
+        var allMissingFields = new HashSet<string>();
+        bool hasInvalidRecords = false;
+
+        foreach (var obj in objects)
+        {
+            var missingFields = GetMissingFields(obj);
+            if (missingFields.Any())
+            {
+                hasInvalidRecords = true;
+                foreach (var field in missingFields)
+                {
+                    allMissingFields.Add(field);
+                }
+            }
+        }
+
+        if (hasInvalidRecords)
+        {
+            var missingFieldsList = string.Join(", ", allMissingFields);
+            var responseText = $"Дополните Ваше предложение необходимой информацией ({missingFieldsList}) Так выйдем на сделку быстрее";
+
+            await _maxBotClient.Messages.ReplyToMessageAsync(
+                chatId: user.Id,
+                messageId: update.Message?.Mid ?? "",
+                text: responseText,
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        // Успешно распарсили. Сбрасываем стейт и продолжаем логику.
+        user.State = BotState.None;
+        await _userRepository.UpdateAsync(user, cancellationToken);
+        
+        await _maxBotClient.Messages.SendMessageAsync(user.Id, "Объявление успешно создано! (заглушка)", cancellationToken: cancellationToken);
+
+        // Record the message
+        await HandleMessage(user, message.Text ?? "", cancellationToken);
+    }
+
+    private List<string> GetMissingFields(AiContainerResponse container)
+    {
+        var missingFields = new List<string>();
+
+        // Цена
+        if ((container.PriceWithTax == null || container.PriceWithTax == 0) &&
+            (container.PriceWithoutTax == null || container.PriceWithoutTax == 0))
+        {
+            missingFields.Add("стоимость контейнера");
+        }
+
+        // Size
+        if (string.IsNullOrWhiteSpace(container.Size) ||
+            container.Size.Equals("null", StringComparison.OrdinalIgnoreCase))
+        {
+            missingFields.Add("размер контейнера");
+        }
+
+        // Type
+        if (string.IsNullOrWhiteSpace(container.Type) ||
+            container.Type.Equals("null", StringComparison.OrdinalIgnoreCase))
+        {
+            missingFields.Add("тип контейнера (HC, DC)");
+        }
+
+        // City
+        if (string.IsNullOrWhiteSpace(container.City) ||
+            container.City.Equals("null", StringComparison.OrdinalIgnoreCase))
+        {
+            missingFields.Add("город");
+        }
+
+        return missingFields;
     }
 }
