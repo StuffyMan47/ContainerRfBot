@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContainerRfBot.Infrastructu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContainerRfBot.API", "ContainerRfBot.API\ContainerRfBot.API.csproj", "{D852EA65-4458-4F6C-AF9E-7DE364169FD5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContainerRfBot.Bot", "ContainerRfBot.Bot\ContainerRfBot.Bot.csproj", "{1E1C31D5-DD7C-4833-A5D6-0D3F2E6026EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{D852EA65-4458-4F6C-AF9E-7DE364169FD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D852EA65-4458-4F6C-AF9E-7DE364169FD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D852EA65-4458-4F6C-AF9E-7DE364169FD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E1C31D5-DD7C-4833-A5D6-0D3F2E6026EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E1C31D5-DD7C-4833-A5D6-0D3F2E6026EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E1C31D5-DD7C-4833-A5D6-0D3F2E6026EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E1C31D5-DD7C-4833-A5D6-0D3F2E6026EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

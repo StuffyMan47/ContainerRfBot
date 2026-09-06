@@ -21,8 +21,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
         
-        services.AddScoped<INotificationService, DummyNotificationService>();
-        
         services.AddHostedService<SubscriptionCheckJob>();
         
         services.AddSingleton<ISetting, Setting>();

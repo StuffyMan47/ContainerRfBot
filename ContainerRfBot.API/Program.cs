@@ -1,4 +1,5 @@
 using ContainerRfBot.API.Extensions;
+using ContainerRfBot.Bot;
 using ContainerRfBot.Infrastructure.DAL;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,7 @@ builder.Services.AddSwagger();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddCoreServices();
+builder.Services.AddBotLayer();
 
 var app = builder.Build();
 

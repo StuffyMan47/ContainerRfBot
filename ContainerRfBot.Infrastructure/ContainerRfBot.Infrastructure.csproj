@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ContainerRfBot.Core\ContainerRfBot.Core.csproj" />
+    <ProjectReference Include="..\ContainerRfBot.Bot\ContainerRfBot.Bot.csproj" />
   </ItemGroup>
 
   <ItemGroup>
