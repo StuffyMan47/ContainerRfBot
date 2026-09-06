@@ -143,28 +143,86 @@ public class MaxBotService
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 await _maxBotClient.Messages.SendMessageAsync(user.Id, "Пожалуйста, введите ваш новый номер телефона:", cancellationToken: cancellationToken);
                 break;
+                
+            case "admin_confirm_payment":
+                if (!user.IsAdmin) break;
+                var allUsers = await _userRepository.GetAllUsersAsync(cancellationToken);
+                var userButtons = new List<InlineKeyboardButton[]>();
+                foreach (var u in allUsers)
+                {
+                    var subInfo = u.HasSubscription ? "(с подпиской)" : "(без подписки)";
+                    userButtons.Add(new[] { new InlineKeyboardButton { Text = $"User {u.Id} {subInfo}", Type = ButtonType.Callback, Payload = $"admin_select_user_{u.Id}" } });
+                }
+                var usersKb = new InlineKeyboard { Buttons = userButtons.ToArray() };
+                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
+                {
+                    Text = "Выберите пользователя для подтверждения оплаты:",
+                    Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", usersKb.Buttons } } } }
+                }, user.Id, cancellationToken: cancellationToken);
+                break;
+                
+            case "admin_cancel":
+                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Действие отменено.", cancellationToken: cancellationToken);
+                break;
+        }
+
+        if (payload?.StartsWith("admin_select_user_") == true)
+        {
+            if (!user.IsAdmin) return;
+            var targetUserIdStr = payload.Replace("admin_select_user_", "");
+            if (long.TryParse(targetUserIdStr, out var targetId))
+            {
+                var confirmKb = new InlineKeyboard
+                {
+                    Buttons = new[]
+                    {
+                        new[] { new InlineKeyboardButton { Text = "Да", Type = ButtonType.Callback, Payload = $"admin_grant_sub_{targetId}" } },
+                        new[] { new InlineKeyboardButton { Text = "Нет", Type = ButtonType.Callback, Payload = "admin_cancel" } }
+                    }
+                };
+                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
+                {
+                    Text = $"Вы уверены, что хотите выдать подписку пользователю {targetId} на 30 дней?",
+                    Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", confirmKb.Buttons } } } }
+                }, user.Id, cancellationToken: cancellationToken);
+            }
+        }
+        else if (payload?.StartsWith("admin_grant_sub_") == true)
+        {
+            if (!user.IsAdmin) return;
+            var targetUserIdStr = payload.Replace("admin_grant_sub_", "");
+            if (long.TryParse(targetUserIdStr, out var targetId))
+            {
+                var targetUser = await _userRepository.GetByIdAsync(targetId, cancellationToken);
+                if (targetUser != null)
+                {
+                    targetUser.HasSubscription = true;
+                    targetUser.SubscriptionExpirationDate = DateTime.UtcNow.AddDays(30);
+                    await _userRepository.UpdateAsync(targetUser, cancellationToken);
+                    await _maxBotClient.Messages.SendMessageAsync(user.Id, $"Подписка пользователю {targetId} успешно выдана на 30 дней.", cancellationToken: cancellationToken);
+                    await _maxBotClient.Messages.SendMessageAsync(targetId, "Администратор подтвердил вашу оплату! Подписка продлена на 30 дней.", cancellationToken: cancellationToken);
+                }
+            }
         }
     }
 
     private async Task SendMainMenuAsync(Core.Entities.User user, CancellationToken cancellationToken)
     {
+        var buttons = new List<InlineKeyboardButton[]>
+        {
+            new[] { new InlineKeyboardButton { Text = "Профиль", Type = ButtonType.Callback, Payload = "profile" } },
+            new[] { new InlineKeyboardButton { Text = "Инструкция", Type = ButtonType.Callback, Payload = "instruction" } },
+            new[] { new InlineKeyboardButton { Text = "Создать объявление о продаже", Type = ButtonType.Callback, Payload = "create_ad" } }
+        };
+
+        if (user.IsAdmin)
+        {
+            buttons.Add(new[] { new InlineKeyboardButton { Text = "Подтвердить оплату (Админ)", Type = ButtonType.Callback, Payload = "admin_confirm_payment" } });
+        }
+
         var inlineKb = new InlineKeyboard
         {
-            Buttons = new[]
-            {
-                new[]
-                {
-                    new InlineKeyboardButton { Text = "Профиль", Type = ButtonType.Callback, Payload = "profile" }
-                },
-                new[]
-                {
-                    new InlineKeyboardButton { Text = "Инструкция", Type = ButtonType.Callback, Payload = "instruction" }
-                },
-                new[]
-                {
-                    new InlineKeyboardButton { Text = "Создать объявление о продаже", Type = ButtonType.Callback, Payload = "create_ad" }
-                }
-            }
+            Buttons = buttons.ToArray()
         };
 
         await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest

@@ -18,6 +18,11 @@ public class UserRepository : IUserRepository
         return _context.Users.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    {
+        return _context.Users.ToListAsync(cancellationToken);
+    }
+
     public Task<List<User>> GetUsersWithExpiringSubscriptionAsync(TimeSpan timeToExpiration, CancellationToken cancellationToken = default)
     {
         var targetDate = DateTime.UtcNow.Add(timeToExpiration);
