@@ -18,6 +18,7 @@ public class MaxBotService
     private readonly IMessageRepository _messageRepository;
     private readonly MaxClient _maxBotClient;
     private readonly IAiTunnelClient _aiTunnelClient;
+    private readonly IYooKassaService _yooKassaService;
     private readonly ILogger<MaxBotService> _logger;
 
     public MaxBotService(
@@ -25,12 +26,14 @@ public class MaxBotService
         IMessageRepository messageRepository,
         MaxClient maxBotClient,
         IAiTunnelClient aiTunnelClient,
+        IYooKassaService yooKassaService,
         ILogger<MaxBotService> logger)
     {
         _userRepository = userRepository;
         _messageRepository = messageRepository;
         _maxBotClient = maxBotClient;
         _aiTunnelClient = aiTunnelClient;
+        _yooKassaService = yooKassaService;
         _logger = logger;
     }
 
@@ -131,6 +134,35 @@ public class MaxBotService
             case "instruction":
                 await _maxBotClient.Messages.SendMessageAsync(user.Id, "Здесь будет инструкция по использованию сервиса...", cancellationToken: cancellationToken);
                 break;
+                
+            case "buy_subscription":
+                var paymentUrl = await _yooKassaService.CreatePaymentAsync(
+                    user.Id, 
+                    1000m, // Пример суммы
+                    "Оплата подписки на 30 дней", 
+                    "https://t.me/your_bot_link", // URL для возврата после оплаты
+                    cancellationToken);
+                
+                if (string.IsNullOrEmpty(paymentUrl))
+                {
+                    await _maxBotClient.Messages.SendMessageAsync(user.Id, "Произошла ошибка при создании ссылки на оплату. Попробуйте позже.", cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    var payKb = new InlineKeyboard
+                    {
+                        Buttons = new[]
+                        {
+                            new[] { new InlineKeyboardButton { Text = "Перейти к оплате", Type = ButtonType.Link, Url = paymentUrl } }
+                        }
+                    };
+                    await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
+                    {
+                        Text = "Для оплаты подписки перейдите по ссылке ниже:",
+                        Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", payKb.Buttons } } } }
+                    }, user.Id, cancellationToken: cancellationToken);
+                }
+                break;
 
             case "create_ad":
                 user.State = BotState.WaitingForAdDetails;
@@ -211,6 +243,7 @@ public class MaxBotService
         var buttons = new List<InlineKeyboardButton[]>
         {
             new[] { new InlineKeyboardButton { Text = "Профиль", Type = ButtonType.Callback, Payload = "profile" } },
+            new[] { new InlineKeyboardButton { Text = "Оплатить подписку", Type = ButtonType.Callback, Payload = "buy_subscription" } },
             new[] { new InlineKeyboardButton { Text = "Инструкция", Type = ButtonType.Callback, Payload = "instruction" } },
             new[] { new InlineKeyboardButton { Text = "Создать объявление о продаже", Type = ButtonType.Callback, Payload = "create_ad" } }
         };

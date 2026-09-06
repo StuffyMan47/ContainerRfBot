@@ -4,7 +4,9 @@ using Microsoft.Extensions.Configuration;
 using ContainerRfBot.Core.Interfaces;
 using ContainerRfBot.Core.Interfaces.Settings;
 using ContainerRfBot.Core.UseCases;
+using ContainerRfBot.Infrastructure.Clients;
 using ContainerRfBot.Infrastructure.DAL;
+using ContainerRfBot.Bot.Services;
 using ContainerRfBot.Infrastructure.DAL.Repositories;
 using ContainerRfBot.Infrastructure.Services;
 using Microsoft.OpenApi.Models;
@@ -20,6 +22,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
+        
+        services.AddScoped<INotificationService, MaxNotificationService>();
+        services.AddHttpClient<IYooKassaService, YooKassaService>();
         
         services.AddHostedService<SubscriptionCheckJob>();
         
