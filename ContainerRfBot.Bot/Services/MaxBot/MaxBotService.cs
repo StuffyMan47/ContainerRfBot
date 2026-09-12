@@ -121,14 +121,11 @@ public class MaxBotService
                     }
                 };
 
-                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
-                {
-                    Text = profileMsg,
-                    Attachments = new AttachmentRequest[] 
-                    {
-                        new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", inlineKb.Buttons } } }
-                    }
-                }, user.Id, cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(
+                    user.Id,
+                    profileMsg,
+                    keyboard: inlineKb,
+                    cancellationToken: cancellationToken);
                 break;
 
             case "instruction":
@@ -156,11 +153,11 @@ public class MaxBotService
                             new[] { new InlineKeyboardButton { Text = "Перейти к оплате", Type = ButtonType.Link, Url = paymentUrl } }
                         }
                     };
-                    await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
-                    {
-                        Text = "Для оплаты подписки перейдите по ссылке ниже:",
-                        Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", payKb.Buttons } } } }
-                    }, user.Id, cancellationToken: cancellationToken);
+                    await _maxBotClient.Messages.SendMessageAsync(
+                        user.Id,
+                        "Для оплаты подписки перейдите по ссылке ниже:",
+                        keyboard: payKb,
+                        cancellationToken: cancellationToken);
                 }
                 break;
 
@@ -186,11 +183,11 @@ public class MaxBotService
                     userButtons.Add(new[] { new InlineKeyboardButton { Text = $"User {u.Id} {subInfo}", Type = ButtonType.Callback, Payload = $"admin_select_user_{u.Id}" } });
                 }
                 var usersKb = new InlineKeyboard { Buttons = userButtons.ToArray() };
-                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
-                {
-                    Text = "Выберите пользователя для подтверждения оплаты:",
-                    Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", usersKb.Buttons } } } }
-                }, user.Id, cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(
+                    user.Id,
+                    "Выберите пользователя для подтверждения оплаты:",
+                    keyboard: usersKb,
+                    cancellationToken: cancellationToken);
                 break;
                 
             case "admin_cancel":
@@ -212,11 +209,11 @@ public class MaxBotService
                         new[] { new InlineKeyboardButton { Text = "Нет", Type = ButtonType.Callback, Payload = "admin_cancel" } }
                     }
                 };
-                await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
-                {
-                    Text = $"Вы уверены, что хотите выдать подписку пользователю {targetId} на 30 дней?",
-                    Attachments = new AttachmentRequest[] { new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", confirmKb.Buttons } } } }
-                }, user.Id, cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageAsync(
+                    user.Id,
+                    $"Вы уверены, что хотите выдать подписку пользователю {targetId} на 30 дней?",
+                    keyboard: confirmKb,
+                    cancellationToken: cancellationToken);
             }
         }
         else if (payload?.StartsWith("admin_grant_sub_") == true)
@@ -258,14 +255,11 @@ public class MaxBotService
             Buttons = buttons.ToArray()
         };
 
-        await _maxBotClient.Messages.SendMessageAsync(new SendMessageRequest
-        {
-            Text = "Главное меню",
-            Attachments = new AttachmentRequest[] 
-            {
-                new AttachmentRequest { Type = "inline_keyboard", Payload = new Dictionary<string, object> { { "buttons", inlineKb.Buttons } } }
-            }
-        }, user.Id, cancellationToken: cancellationToken);
+        await _maxBotClient.Messages.SendMessageAsync(
+            user.Id,
+            "Главное меню",
+            keyboard: inlineKb,
+            cancellationToken: cancellationToken);
     }
 
     private async Task<Core.Models.UserModel> SaveOrUpdateUserAsync(Max.Bot.Types.User sender, CancellationToken cancellationToken)
