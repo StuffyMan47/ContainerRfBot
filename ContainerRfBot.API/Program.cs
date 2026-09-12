@@ -38,7 +38,7 @@ var maxClient = app.Services.GetRequiredService<MaxClient>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 var maxHandler = new DelegatingUpdateHandler(
-    onMessage: async (updateContext, ct) =>
+    onUpdate: async (updateContext, ct) =>
     {
         try
         {
