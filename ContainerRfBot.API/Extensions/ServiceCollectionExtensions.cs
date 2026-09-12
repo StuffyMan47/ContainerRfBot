@@ -6,8 +6,8 @@ using ContainerRfBot.Core.Interfaces.Settings;
 using ContainerRfBot.Core.UseCases;
 using ContainerRfBot.Infrastructure.Clients;
 using ContainerRfBot.Infrastructure.DAL;
-using ContainerRfBot.Bot.Services;
 using ContainerRfBot.Infrastructure.DAL.Repositories;
+using ContainerRfBot.Bot.Services;
 using ContainerRfBot.Infrastructure.Services;
 using Microsoft.OpenApi.Models;
 
@@ -17,8 +17,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddDataAccessLayer(configuration);
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();

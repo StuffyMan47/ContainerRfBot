@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Models;
 using ContainerRfBot.Core.Interfaces;
 
 namespace ContainerRfBot.API.Controllers;
@@ -18,7 +18,7 @@ public class UserController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        var user = new User
+        var user = new UserModel
         {
             Id = request.Id, // In a real app this would likely come from auth or a proper ID generator if not provided
             IsAdmin = request.IsAdmin,

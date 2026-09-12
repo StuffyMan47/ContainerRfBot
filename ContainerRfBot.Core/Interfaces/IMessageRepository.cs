@@ -1,9 +1,9 @@
-using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Models;
 
 namespace ContainerRfBot.Core.Interfaces;
 
 public interface IMessageRepository
 {
-    Task AddAsync(Message message, CancellationToken cancellationToken = default);
-    Task<List<Message>> GetByUserIdAsync(long userId, CancellationToken cancellationToken = default);
+    Task AddAsync(MessageModel message, CancellationToken cancellationToken = default);
+    Task<List<MessageModel>> GetByUserIdAsync(long userId, CancellationToken cancellationToken = default);
 }

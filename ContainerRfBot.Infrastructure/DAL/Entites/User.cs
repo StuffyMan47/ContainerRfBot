@@ -1,11 +1,10 @@
+using ContainerRfBot.Core.Entities;
 using ContainerRfBot.Core.Enums;
 
-namespace ContainerRfBot.Core.Entities;
+namespace ContainerRfBot.Infrastructure.DAL.Entites;
 
-public class User
+public class User : BaseEntity
 {
-    public long Id { get; set; }
-    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     // Roles

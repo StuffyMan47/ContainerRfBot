@@ -1,7 +1,7 @@
 using System.Text.Json;
 using ContainerRfBot.Bot.AiTunnelService;
 using ContainerRfBot.Bot.AiTunnelService.Model;
-using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Models;
 using ContainerRfBot.Core.Enums;
 using ContainerRfBot.Core.Interfaces;
 using Max.Bot;
@@ -238,7 +238,7 @@ public class MaxBotService
         }
     }
 
-    private async Task SendMainMenuAsync(Core.Entities.User user, CancellationToken cancellationToken)
+    private async Task SendMainMenuAsync(Core.Models.UserModel user, CancellationToken cancellationToken)
     {
         var buttons = new List<InlineKeyboardButton[]>
         {
@@ -268,13 +268,13 @@ public class MaxBotService
         }, user.Id, cancellationToken: cancellationToken);
     }
 
-    private async Task<Core.Entities.User> SaveOrUpdateUserAsync(Max.Bot.Types.User sender, CancellationToken cancellationToken)
+    private async Task<Core.Models.UserModel> SaveOrUpdateUserAsync(Max.Bot.Types.User sender, CancellationToken cancellationToken)
     {
         var dbUser = await _userRepository.GetByIdAsync(sender.Id, cancellationToken);
 
         if (dbUser == null)
         {
-            dbUser = new Core.Entities.User
+            dbUser = new Core.Models.UserModel
             {
                 Id = sender.Id,
                 IsAdmin = false,
@@ -287,9 +287,9 @@ public class MaxBotService
         return dbUser;
     }
 
-    private async Task HandleMessage(Core.Entities.User user, string text, CancellationToken cancellationToken)
+    private async Task HandleMessage(Core.Models.UserModel user, string text, CancellationToken cancellationToken)
     {
-        var message = new Core.Entities.Message
+        var message = new Core.Models.MessageModel
         {
             UserId = user.Id,
             Content = text,
@@ -299,7 +299,7 @@ public class MaxBotService
         await _messageRepository.AddAsync(message, cancellationToken);
     }
 
-    private async Task HandleCreateAdMessage(Core.Entities.User user, Update update, Max.Bot.Types.Message message, CancellationToken cancellationToken)
+    private async Task HandleCreateAdMessage(Core.Models.UserModel user, Update update, Max.Bot.Types.Message message, CancellationToken cancellationToken)
     {
         List<AiContainerResponse> objects = new List<AiContainerResponse>();
         string result = null;

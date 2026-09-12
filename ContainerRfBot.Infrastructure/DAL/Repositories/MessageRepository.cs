@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Models;
 using ContainerRfBot.Core.Interfaces;
+using ContainerRfBot.Infrastructure.DAL.DbContext;
+using ContainerRfBot.Infrastructure.DAL.Entites;
 
 namespace ContainerRfBot.Infrastructure.DAL.Repositories;
 
@@ -13,17 +15,32 @@ public class MessageRepository : IMessageRepository
         _context = context;
     }
 
-    public async Task AddAsync(Message message, CancellationToken cancellationToken = default)
+    public async Task AddAsync(MessageModel message, CancellationToken cancellationToken = default)
     {
-        await _context.Messages.AddAsync(message, cancellationToken);
+        var entity = new Message
+        {
+            UserId = message.UserId,
+            Content = message.Content,
+            SentAt = message.SentAt
+        };
+        await _context.Messages.AddAsync(entity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        message.Id = entity.Id;
     }
 
-    public Task<List<Message>> GetByUserIdAsync(long userId, CancellationToken cancellationToken = default)
+    public async Task<List<MessageModel>> GetByUserIdAsync(long userId, CancellationToken cancellationToken = default)
     {
-        return _context.Messages
+        var messages = await _context.Messages
             .Where(x => x.UserId == userId)
             .OrderByDescending(x => x.SentAt)
             .ToListAsync(cancellationToken);
+            
+        return messages.Select(m => new MessageModel
+        {
+            Id = m.Id,
+            UserId = m.UserId,
+            Content = m.Content,
+            SentAt = m.SentAt
+        }).ToList();
     }
 }

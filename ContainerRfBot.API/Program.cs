@@ -1,6 +1,6 @@
 using ContainerRfBot.API.Extensions;
 using ContainerRfBot.Bot;
-using ContainerRfBot.Infrastructure.DAL;
+using ContainerRfBot.Infrastructure.DAL.DbContext;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,12 +29,5 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Run migrations on startup (optional, depending on deployment strategy)
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
-}
 
 app.Run();

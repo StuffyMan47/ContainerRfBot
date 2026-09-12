@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ContainerRfBot.Core.Entities;
+using ContainerRfBot.Core.Models;
 using ContainerRfBot.Core.Interfaces;
 
 namespace ContainerRfBot.API.Controllers;
@@ -18,7 +18,7 @@ public class MessageController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> AddMessage([FromBody] AddMessageRequest request)
     {
-        var message = new Message
+        var message = new MessageModel
         {
             UserId = request.UserId,
             Content = request.Content
