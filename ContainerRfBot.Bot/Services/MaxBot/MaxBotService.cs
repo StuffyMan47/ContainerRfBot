@@ -140,7 +140,7 @@ public class MaxBotService
                     user.Id, 
                     1000m, // Пример суммы
                     "Оплата подписки на 30 дней", 
-                    "https://t.me/your_bot_link", // URL для возврата после оплаты
+                    "https://max.ru/", // URL для возврата после оплаты (замените на нужный deeplink или сайт)
                     cancellationToken);
                 
                 if (string.IsNullOrEmpty(paymentUrl))
