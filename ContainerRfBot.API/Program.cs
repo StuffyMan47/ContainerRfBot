@@ -35,7 +35,6 @@ app.MapControllers();
 
 // Запускаем polling для Max.Bot
 var maxClient = app.Services.GetRequiredService<MaxClient>();
-var maxBotService = app.Services.CreateScope().ServiceProvider.GetRequiredService<MaxBotService>();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 var maxHandler = new DelegatingUpdateHandler(
@@ -43,6 +42,9 @@ var maxHandler = new DelegatingUpdateHandler(
     {
         try
         {
+            // Важно создавать Scope для каждого сообщения, так как DbContext не потокобезопасен
+            using var scope = app.Services.CreateScope();
+            var maxBotService = scope.ServiceProvider.GetRequiredService<MaxBotService>();
             await maxBotService.HandleUpdateAsync(updateContext.Update, ct);
         }
         catch (Exception ex)
