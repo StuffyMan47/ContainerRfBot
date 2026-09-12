@@ -17,7 +17,7 @@ public static class Startup
     
     private static IServiceCollection AddAppDbContext(this IServiceCollection services, IConfiguration config)
     {
-        string? dbConnectionString = config.GetConnectionString("DefaultConnection");
+        string? dbConnectionString = config.GetConnectionString("DBConnectionString");
         return services.AddDbContext<AppDbContext>(options =>
         {
             options.UseNpgsql(dbConnectionString, x => x
