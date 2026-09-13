@@ -31,6 +31,8 @@ public class YooKassaController : ControllerBase
     [HttpPost("webhook")]
     public async Task<IActionResult> Webhook([FromBody] JsonElement payload, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Received YooKassa webhook: {Payload}", payload.ToString());
+        
         try
         {
             if (payload.TryGetProperty("event", out var eventType) && eventType.GetString() == "payment.succeeded")
@@ -47,7 +49,19 @@ public class YooKassaController : ControllerBase
                         await _maxClient.Messages.SendMessageToUserAsync(userId: userId, text: "Ваша оплата успешно получена! Подписка активирована на 30 дней.", cancellationToken: cancellationToken);
                         _logger.LogInformation("Subscription granted via YooKassa for User {UserId}", userId);
                     }
+                    else
+                    {
+                        _logger.LogWarning("Failed to parse userId from metadata: {UserId}", userIdElement.GetString());
+                    }
                 }
+                else
+                {
+                    _logger.LogWarning("Received payment.succeeded, but metadata or userId is missing in the payload");
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Received YooKassa event: {EventType}", eventType.GetString());
             }
 
             return Ok();
