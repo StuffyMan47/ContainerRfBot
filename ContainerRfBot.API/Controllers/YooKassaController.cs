@@ -38,7 +38,7 @@ public class YooKassaController : ControllerBase
                         var expirationDate = DateTime.UtcNow.AddDays(30);
                         await _manageSubscriptionUseCase.SetSubscriptionStatusAsync(userId, true, expirationDate, cancellationToken);
                         
-                        await _maxClient.Messages.SendMessageAsync(userId, "Ваша оплата успешно получена! Подписка активирована на 30 дней.", cancellationToken: cancellationToken);
+                        await _maxClient.Messages.SendMessageToUserAsync(userId, "Ваша оплата успешно получена! Подписка активирована на 30 дней.", cancellationToken: cancellationToken);
                         _logger.LogInformation("Subscription granted via YooKassa for User {UserId}", userId);
                     }
                 }
