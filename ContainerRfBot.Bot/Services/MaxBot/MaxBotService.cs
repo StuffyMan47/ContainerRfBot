@@ -69,7 +69,7 @@ public class MaxBotService
                 user.PhoneNumber = text;
                 user.State = BotState.None;
                 await _userRepository.UpdateAsync(user, cancellationToken);
-                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Номер телефона успешно обновлен!", cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Номер телефона успешно обновлен!", cancellationToken: cancellationToken);
                 await SendMainMenuAsync(user, cancellationToken);
                 return;
             }
@@ -121,15 +121,15 @@ public class MaxBotService
                     }
                 };
 
-                await _maxBotClient.Messages.SendMessageAsync(
-                    user.Id,
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id,
                     profileMsg,
                     keyboard: inlineKb,
                     cancellationToken: cancellationToken);
                 break;
 
             case "instruction":
-                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Здесь будет инструкция по использованию сервиса...", cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Здесь будет инструкция по использованию сервиса...", cancellationToken: cancellationToken);
                 break;
                 
             case "buy_subscription":
@@ -142,7 +142,7 @@ public class MaxBotService
                 
                 if (string.IsNullOrEmpty(paymentUrl))
                 {
-                    await _maxBotClient.Messages.SendMessageAsync(user.Id, "Произошла ошибка при создании ссылки на оплату. Попробуйте позже.", cancellationToken: cancellationToken);
+                    await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Произошла ошибка при создании ссылки на оплату. Попробуйте позже.", cancellationToken: cancellationToken);
                 }
                 else
                 {
@@ -153,8 +153,8 @@ public class MaxBotService
                             new[] { new InlineKeyboardButton { Text = "Перейти к оплате", Type = ButtonType.Link, Url = paymentUrl } }
                         }
                     };
-                    await _maxBotClient.Messages.SendMessageAsync(
-                        user.Id,
+                    await _maxBotClient.Messages.SendMessageToUserAsync(
+                        userId: user.Id,
                         "Для оплаты подписки перейдите по ссылке ниже:",
                         keyboard: payKb,
                         cancellationToken: cancellationToken);
@@ -164,13 +164,13 @@ public class MaxBotService
             case "create_ad":
                 user.State = BotState.WaitingForAdDetails;
                 await _userRepository.UpdateAsync(user, cancellationToken);
-                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", cancellationToken: cancellationToken);
                 break;
 
             case "change_phone":
                 user.State = BotState.WaitingForPhone;
                 await _userRepository.UpdateAsync(user, cancellationToken);
-                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Пожалуйста, введите ваш новый номер телефона:", cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Пожалуйста, введите ваш новый номер телефона:", cancellationToken: cancellationToken);
                 break;
                 
             case "admin_confirm_payment":
@@ -183,15 +183,15 @@ public class MaxBotService
                     userButtons.Add(new[] { new InlineKeyboardButton { Text = $"User {u.Id} {subInfo}", Type = ButtonType.Callback, Payload = $"admin_select_user_{u.Id}" } });
                 }
                 var usersKb = new InlineKeyboard { Buttons = userButtons.ToArray() };
-                await _maxBotClient.Messages.SendMessageAsync(
-                    user.Id,
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id,
                     "Выберите пользователя для подтверждения оплаты:",
                     keyboard: usersKb,
                     cancellationToken: cancellationToken);
                 break;
                 
             case "admin_cancel":
-                await _maxBotClient.Messages.SendMessageAsync(user.Id, "Действие отменено.", cancellationToken: cancellationToken);
+                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Действие отменено.", cancellationToken: cancellationToken);
                 break;
         }
 
@@ -209,8 +209,8 @@ public class MaxBotService
                         new[] { new InlineKeyboardButton { Text = "Нет", Type = ButtonType.Callback, Payload = "admin_cancel" } }
                     }
                 };
-                await _maxBotClient.Messages.SendMessageAsync(
-                    user.Id,
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id,
                     $"Вы уверены, что хотите выдать подписку пользователю {targetId} на 30 дней?",
                     keyboard: confirmKb,
                     cancellationToken: cancellationToken);
@@ -228,8 +228,8 @@ public class MaxBotService
                     targetUser.HasSubscription = true;
                     targetUser.SubscriptionExpirationDate = DateTime.UtcNow.AddDays(30);
                     await _userRepository.UpdateAsync(targetUser, cancellationToken);
-                    await _maxBotClient.Messages.SendMessageAsync(user.Id, $"Подписка пользователю {targetId} успешно выдана на 30 дней.", cancellationToken: cancellationToken);
-                    await _maxBotClient.Messages.SendMessageAsync(targetId, "Администратор подтвердил вашу оплату! Подписка продлена на 30 дней.", cancellationToken: cancellationToken);
+                    await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, $"Подписка пользователю {targetId} успешно выдана на 30 дней.", cancellationToken: cancellationToken);
+                    await _maxBotClient.Messages.SendMessageToUserAsync(userId: targetId, "Администратор подтвердил вашу оплату! Подписка продлена на 30 дней.", cancellationToken: cancellationToken);
                 }
             }
         }
@@ -255,8 +255,8 @@ public class MaxBotService
             Buttons = buttons.ToArray()
         };
 
-        await _maxBotClient.Messages.SendMessageAsync(
-            user.Id,
+        await _maxBotClient.Messages.SendMessageToUserAsync(
+            userId: user.Id,
             "Главное меню",
             keyboard: inlineKb,
             cancellationToken: cancellationToken);
@@ -305,7 +305,7 @@ public class MaxBotService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка при обработке сообщения в ai tunnel");
-            await _maxBotClient.Messages.SendMessageAsync(user.Id, "Произошла ошибка при обработке вашего сообщения.", cancellationToken: cancellationToken);
+            await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Произошла ошибка при обработке вашего сообщения.", cancellationToken: cancellationToken);
             return;
         }
 
@@ -342,7 +342,7 @@ public class MaxBotService
         user.State = BotState.None;
         await _userRepository.UpdateAsync(user, cancellationToken);
         
-        await _maxBotClient.Messages.SendMessageAsync(user.Id, "Объявление успешно создано! (заглушка)", cancellationToken: cancellationToken);
+        await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Объявление успешно создано! (заглушка)", cancellationToken: cancellationToken);
 
         // Record the message
         await HandleMessage(user, message.Text ?? "", cancellationToken);
