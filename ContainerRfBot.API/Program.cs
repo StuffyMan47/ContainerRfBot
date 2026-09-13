@@ -42,14 +42,36 @@ var maxHandler = new DelegatingUpdateHandler(
     {
         try
         {
-            // Важно создавать Scope для каждого сообщения, так как DbContext не потокобезопасен
+            logger.LogInformation($"RECEIVED UPDATE EVENT: Type={updateContext.Update?.Type}");
+        }
+        catch { }
+    },
+    onMessage: async (updateContext, ct) =>
+    {
+        try
+        {
+            logger.LogInformation($"RECEIVED MESSAGE EVENT");
             using var scope = app.Services.CreateScope();
             var maxBotService = scope.ServiceProvider.GetRequiredService<MaxBotService>();
             await maxBotService.HandleUpdateAsync(updateContext.Update, ct);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error handling Max bot update");
+            logger.LogError(ex, "Error handling Max bot message");
+        }
+    },
+    onCallback: async (updateContext, ct) =>
+    {
+        try
+        {
+            logger.LogInformation($"RECEIVED CALLBACK EVENT");
+            using var scope = app.Services.CreateScope();
+            var maxBotService = scope.ServiceProvider.GetRequiredService<MaxBotService>();
+            await maxBotService.HandleUpdateAsync(updateContext.Update, ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error handling Max bot callback");
         }
     }
 );

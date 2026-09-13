@@ -39,19 +39,26 @@ public class MaxBotService
 
     public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("HandleUpdateAsync started. Has Callback: {HasCallback}, Has Message: {HasMessage}", update.Callback != null, update.Message != null);
         try
         {
             if (update.Callback != null)
             {
+                _logger.LogInformation("Processing Callback: {Payload}", update.Callback.Payload);
                 await HandleCallbackAsync(update.Callback, cancellationToken);
                 return;
             }
 
             if (update.Message is not { } message)
+            {
+                _logger.LogWarning("Update has no Message and no Callback.");
                 return;
+            }
 
             var maxUserId = message.Sender?.Id;
             var text = message.Text ?? string.Empty;
+            
+            _logger.LogInformation("Processing Message from {UserId}: {Text}", maxUserId, text);
 
             if (maxUserId == null) return;
 

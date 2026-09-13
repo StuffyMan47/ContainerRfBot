@@ -6,6 +6,7 @@ using ContainerRfBot.Core.Interfaces.Settings;
 using Max.Bot;
 using Max.Bot.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ContainerRfBot.Bot;
 
@@ -16,9 +17,14 @@ public static class Startup
         services.AddSingleton<MaxClient>(provider =>
         {
             var settings = provider.GetRequiredService<ISetting>();
+            var logger = provider.GetRequiredService<ILogger<MaxClient>>();
+            var token = settings.BotConfiguration.MaxToken;
+            
+            logger.LogInformation("Initializing MaxClient with token: {TokenPrefix}...", token?.Substring(0, Math.Min(token?.Length ?? 0, 5)));
+            
             return new MaxClient(new MaxBotOptions
             {
-                Token = settings.BotConfiguration.MaxToken
+                Token = token
             });
         });
 
