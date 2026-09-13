@@ -142,7 +142,7 @@ public class MaxBotService
             case "buy_subscription":
                 var paymentUrl = await _yooKassaService.CreatePaymentAsync(
                     user.Id, 
-                    1000m, // Пример суммы
+                    300m, // Пример суммы
                     "Оплата подписки на 30 дней", 
                     "https://web.max.ru/402213961", // URL для возврата после оплаты (замените на нужный deeplink или сайт)
                     cancellationToken);
