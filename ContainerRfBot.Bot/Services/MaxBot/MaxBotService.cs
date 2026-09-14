@@ -114,7 +114,7 @@ public class MaxBotService
 
                 var inlineKb = new InlineKeyboard
                 {
-                    Buttons = new[]
+                                        Buttons = new[]
                     {
                         new[]
                         {
@@ -123,6 +123,15 @@ public class MaxBotService
                                 Text = "Изменить номер телефона",
                                 Type = ButtonType.Callback,
                                 Payload = "change_phone"
+                            }
+                        },
+                        new[]
+                        {
+                            new InlineKeyboardButton
+                            {
+                                Text = "Назад",
+                                Type = ButtonType.Callback,
+                                Payload = "back_to_main"
                             }
                         }
                     }
@@ -135,8 +144,19 @@ public class MaxBotService
                     cancellationToken: cancellationToken);
                 break;
 
-            case "instruction":
-                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Здесь будет инструкция по использованию сервиса...", cancellationToken: cancellationToken);
+                        case "instruction":
+                var instrKb = new InlineKeyboard
+                {
+                    Buttons = new[]
+                    {
+                        new[] { new InlineKeyboardButton { Text = "Назад", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                    }
+                };
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id, 
+                    "Здесь будет инструкция по использованию сервиса...", 
+                    keyboard: instrKb,
+                    cancellationToken: cancellationToken);
                 break;
                 
             case "buy_subscription":
@@ -168,16 +188,51 @@ public class MaxBotService
                 }
                 break;
 
-            case "create_ad":
+                        case "create_ad":
                 user.State = BotState.WaitingForAdDetails;
                 await _userRepository.UpdateAsync(user, cancellationToken);
-                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", cancellationToken: cancellationToken);
+                
+                var cancelAdKb = new InlineKeyboard
+                {
+                    Buttons = new[]
+                    {
+                        new[] { new InlineKeyboardButton { Text = "Отмена", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                    }
+                };
+                
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id, 
+                    "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", 
+                    keyboard: cancelAdKb,
+                    cancellationToken: cancellationToken);
                 break;
 
-            case "change_phone":
+                        case "change_phone":
                 user.State = BotState.WaitingForPhone;
                 await _userRepository.UpdateAsync(user, cancellationToken);
-                await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Пожалуйста, введите ваш новый номер телефона:", cancellationToken: cancellationToken);
+                
+                var cancelPhoneKb = new InlineKeyboard
+                {
+                    Buttons = new[]
+                    {
+                        new[] { new InlineKeyboardButton { Text = "Отмена", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                    }
+                };
+                
+                await _maxBotClient.Messages.SendMessageToUserAsync(
+                    userId: user.Id, 
+                    "Пожалуйста, введите ваш новый номер телефона:", 
+                    keyboard: cancelPhoneKb,
+                    cancellationToken: cancellationToken);
+                break;
+                
+                        case "back_to_main":
+                if (user.State != BotState.None)
+                {
+                    user.State = BotState.None;
+                    await _userRepository.UpdateAsync(user, cancellationToken);
+                }
+                await SendMainMenuAsync(user, cancellationToken);
                 break;
                 
             case "admin_confirm_payment":
