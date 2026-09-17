@@ -1,4 +1,4 @@
-namespace ContainerFather.Core.Enums.SiteEnums;
+namespace ContainerRfBot.Core.Enums.SiteEnums;
 
 public enum PriceType
 {

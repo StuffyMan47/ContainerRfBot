@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ContainerRfBot.Core.Interfaces;
 using ContainerRfBot.Core.Interfaces.Settings;
+using ContainerRfBot.Core.Interfaces.Settings.Models;
 using ContainerRfBot.Core.UseCases;
 using ContainerRfBot.Infrastructure.Clients;
 using ContainerRfBot.Infrastructure.DAL;
 using ContainerRfBot.Infrastructure.DAL.Repositories;
 using ContainerRfBot.Bot.Services;
+using ContainerRfBot.Bot.Services.SiteService;
 using ContainerRfBot.Infrastructure.Services;
 using Microsoft.OpenApi.Models;
 
@@ -17,10 +19,13 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<BotConfiguration>(configuration.GetSection("BotConfiguration"));
         services.AddDataAccessLayer(configuration);
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddScoped<ISiteClient, SiteClient>();
         
         services.AddScoped<INotificationService, MaxNotificationService>();
         services.AddHttpClient<IYooKassaService, YooKassaService>();

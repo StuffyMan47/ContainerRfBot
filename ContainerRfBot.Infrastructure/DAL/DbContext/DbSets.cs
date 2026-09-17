@@ -8,6 +8,7 @@ public partial class AppDbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<Container> Containers => Set<Container>();
 
     public void Configure(EntityTypeBuilder<User> builder)
     {
@@ -26,5 +27,13 @@ public partial class AppDbContext
         builder.Property(x => x.Content)
             .IsRequired()
             .HasMaxLength(4000);
+    }
+
+    public void Configure(EntityTypeBuilder<Container> builder)
+    {
+        builder.HasKey(x => x.Id);
+           
+        builder.HasIndex(x => x.ArticleId).IsUnique();
+        builder.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
     }
 }

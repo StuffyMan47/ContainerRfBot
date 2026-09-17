@@ -7,7 +7,6 @@ public class UserConfiguration : IEntityTypeConfiguration<Entites.User>
 {
     public void Configure(EntityTypeBuilder<Entites.User> builder)
     {
-        // ContainerFather relies on ApplyConfigurationsFromAssembly, so we explicitly implement IEntityTypeConfiguration
         var context = new AppDbContext(new DbContextOptions<AppDbContext>());
         context.Configure(builder);
     }
@@ -16,6 +15,15 @@ public class UserConfiguration : IEntityTypeConfiguration<Entites.User>
 public class MessageConfiguration : IEntityTypeConfiguration<Entites.Message>
 {
     public void Configure(EntityTypeBuilder<Entites.Message> builder)
+    {
+        var context = new AppDbContext(new DbContextOptions<AppDbContext>());
+        context.Configure(builder);
+    }
+}
+
+public class ContainerConfiguration : IEntityTypeConfiguration<Entites.Container>
+{
+    public void Configure(EntityTypeBuilder<Entites.Container> builder)
     {
         var context = new AppDbContext(new DbContextOptions<AppDbContext>());
         context.Configure(builder);
