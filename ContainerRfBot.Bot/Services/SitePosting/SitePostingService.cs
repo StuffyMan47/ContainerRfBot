@@ -61,7 +61,7 @@ public class SitePostingService : ISitePostingService
                     Address = container.City,
                     Currency = container.CurrencyId,
                     Quantity = container.Count,
-                    PhoneNumber = null,
+                    PhoneNumber = container.PhoneNumber,
                     PriceType = container.PriceWithoutTax.HasValue ? PriceType.WithoutTax : PriceType.WithTax,
                     Price = container.PriceWithoutTax.HasValue ? container.PriceWithoutTax.Value * (decimal)1.1 : container.PriceWithTax.Value * (decimal)1.1,
                     Location = new LocationDetails()

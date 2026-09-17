@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using ContainerRfBot.Bot.AiTunnelService;
 using ContainerRfBot.Bot.AiTunnelService.Model;
 using ContainerRfBot.Bot.Helper;
@@ -106,7 +107,27 @@ public class MaxBotService
             // Route based on state
             if (user.State == BotState.WaitingForPhone)
             {
-                user.PhoneNumber = text;
+                var input = text?.Trim() ?? string.Empty;
+                var cleanedPhone = Regex.Replace(input, @"[\s\-\(\)]", "");
+
+                if (!Regex.IsMatch(cleanedPhone, @"^\+7\d{10}$"))
+                {
+                    var cancelPhoneKb = new InlineKeyboard
+                    {
+                        Buttons = new[]
+                        {
+                            new[] { new InlineKeyboardButton { Text = "Отмена / Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                        }
+                    };
+                    await _maxBotClient.Messages.SendMessageToUserAsync(
+                        userId: user.Id,
+                        "Неверный формат номера телефона. Номер должен начинаться с +7 и содержать 10 цифр (например, +79991234567). Пожалуйста, введите номер еще раз:",
+                        keyboard: cancelPhoneKb,
+                        cancellationToken: cancellationToken);
+                    return;
+                }
+
+                user.PhoneNumber = cleanedPhone;
                 user.State = BotState.None;
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Номер телефона успешно обновлен!", cancellationToken: cancellationToken);
@@ -255,7 +276,7 @@ public class MaxBotService
                 
                 await _maxBotClient.Messages.SendMessageToUserAsync(
                     userId: user.Id, 
-                    "Пожалуйста, введите ваш новый номер телефона:", 
+                    "Пожалуйста, введите ваш новый номер телефона в формате +7XXXXXXXXXX (например, +79991234567):", 
                     keyboard: cancelPhoneKb,
                     cancellationToken: cancellationToken);
                 break;
@@ -343,7 +364,7 @@ public class MaxBotService
 
         if (user.IsAdmin)
         {
-            buttons.Add(new[] { new InlineKeyboardButton { Text = "Подтвердить оплату (Админ)", Type = ButtonType.Callback, Payload = "admin_confirm_payment" } });
+            buttons.Add(new[] { new InlineKeyboardButton { Text = "Подтвердить оплату", Type = ButtonType.Callback, Payload = "admin_confirm_payment" } });
         }
 
         var inlineKb = new InlineKeyboard
@@ -446,6 +467,10 @@ public class MaxBotService
         {
             if (objects != null && objects.Count > 0)
             {
+                var userInfo = await _userRepository.GetByIdAsync(message.Sender.Id, CancellationToken.None);
+                var userDbId = userInfo?.Id ?? user.Id;
+                var userPhone = userInfo.HasSubscription ? user.PhoneNumber : "+7 (931) 521-07-67";
+                
                 List<ContainerRequestModel> containers = [];
                 foreach (var x in objects)
                 {
@@ -472,13 +497,11 @@ public class MaxBotService
                         Count = x.Count,
                         Username = $"@{message.Sender?.Username ?? message.Sender?.FirstName}",
                         CurrencyId = x.Currency,
-                        MessageUrl = ""
+                        MessageUrl = "",
+                        PhoneNumber = userPhone
                     };
                     containers.Add(container);
                 }
-                var userInfo = await _userRepository.GetByIdAsync(message.Sender.Id, cancellationToken);
-                var userDbId = userInfo?.Id ?? user.Id;
-                var userPhone = userInfo?.PhoneNumber ?? user.PhoneNumber ?? "";
 
                 // write to db
                 await _containerRepository.CreateContainerList(containers.Select(x => new CreateContainerListRequest
@@ -496,8 +519,8 @@ public class MaxBotService
                     Latitude = x.Latitude,
                     Longitude = x.Longitude,
                     UserId = userDbId,
-                    MessageId = x.MessageUrl
-                }).ToList(), cancellationToken);
+                    MessageId = x.MessageUrl,
+                }).ToList(), CancellationToken.None);
                 
                 await WriteToGoogleSheets(containers, MessengerType.ContainerRf);
                 await _sitePostingService.SendContainersToSite(containers);
@@ -527,7 +550,7 @@ public class MaxBotService
         catch (Exception ex)
         {
             await _maxBotClient.Messages.SendMessageAsync(
-                244266512,
+                244266512L,
                 "Ошибка при записи данных в excel таблицу:" +
                 $"{ex.Message}\n" +
                 $"username: {message?.Sender?.Name}\n" +
@@ -537,13 +560,32 @@ public class MaxBotService
         }
         // Успешно распарсили. Сбрасываем стейт и продолжаем логику.
         user.State = BotState.None;
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _userRepository.UpdateAsync(user, CancellationToken.None);
         
-        await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Объявление успешно создано и отправлено на сайт!", cancellationToken: cancellationToken);
-        await SendMainMenuAsync(user, cancellationToken);
+        var successKb = new InlineKeyboard
+        {
+            Buttons = new[]
+            {
+                new[]
+                {
+                    new InlineKeyboardButton
+                    {
+                        Text = "Вернуться в главное меню",
+                        Type = ButtonType.Callback,
+                        Payload = "back_to_main"
+                    }
+                }
+            }
+        };
+
+        await _maxBotClient.Messages.SendMessageToUserAsync(
+            userId: user.Id, 
+            "Объявление успешно создано и отправлено на сайт!", 
+            keyboard: successKb, 
+            cancellationToken: CancellationToken.None);
 
         // Record the message
-        await HandleMessage(user, message.Text ?? "", cancellationToken);
+        await HandleMessage(user, message.Text ?? "", CancellationToken.None);
     }
     
     private async Task WriteToGoogleSheets(List<ContainerRequestModel> models, MessengerType messengerType)

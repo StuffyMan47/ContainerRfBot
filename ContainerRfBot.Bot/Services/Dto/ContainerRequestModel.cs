@@ -76,4 +76,6 @@ public class ContainerRequestModel
     /// Ссылка на сообщение
     /// </summary>
     public required string MessageUrl { get; set; }
+    
+    public required string PhoneNumber { get; set; }
 }
