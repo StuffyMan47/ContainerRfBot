@@ -477,9 +477,9 @@ public class MaxBotService
                     MessageId = x.MessageUrl
                 }).ToList(), cancellationToken);
                 
-                await WriteToGoogleSheets(containers, MessengerType.Max);
-                
+                await WriteToGoogleSheets(containers, MessengerType.ContainerRf);
                 await _sitePostingService.SendContainersToSite(containers);
+
                 DateTime moscowTime = DateTime.UtcNow.AddHours(3);
 
                 if (moscowTime.Hour >= 9 && moscowTime.Hour < 18)
@@ -573,7 +573,7 @@ public class MaxBotService
                     model.PriceWithoutTax.HasValue ? model.PriceWithoutTax.Value : string.Empty,
                     model.Currency,
                     model.Count,
-                    messengerType == MessengerType.Max ? "Max" : "Telegram",
+                    "Container RF",
                 };
                 values.Add(row);
             }
