@@ -84,8 +84,21 @@ public class MaxBotService
 
             var user = await SaveOrUpdateUserAsync(message.Sender!, cancellationToken);
 
-            if (text == "/start")
+            var trimmedText = text.Trim();
+            if (trimmedText.Equals("/start", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("/menu", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("меню", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("главное меню", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("в главное меню", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("назад", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("отмена", StringComparison.OrdinalIgnoreCase) ||
+                trimmedText.Equals("/cancel", StringComparison.OrdinalIgnoreCase))
             {
+                if (user.State != BotState.None)
+                {
+                    user.State = BotState.None;
+                    await _userRepository.UpdateAsync(user, cancellationToken);
+                }
                 await SendMainMenuAsync(user, cancellationToken);
                 return;
             }
@@ -149,7 +162,7 @@ public class MaxBotService
                         {
                             new InlineKeyboardButton
                             {
-                                Text = "Назад",
+                                Text = "Главное меню",
                                 Type = ButtonType.Callback,
                                 Payload = "back_to_main"
                             }
@@ -164,17 +177,17 @@ public class MaxBotService
                     cancellationToken: cancellationToken);
                 break;
 
-                        case "instruction":
+            case "instruction":
                 var instrKb = new InlineKeyboard
                 {
                     Buttons = new[]
                     {
-                        new[] { new InlineKeyboardButton { Text = "Назад", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                        new[] { new InlineKeyboardButton { Text = "Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
                     }
                 };
                 await _maxBotClient.Messages.SendMessageToUserAsync(
                     userId: user.Id, 
-                    "Здесь будет инструкция по использованию сервиса...", 
+                    "📦 Продажа контейнеров на контейнеру.рф\n1️⃣ Нажмите «Создать объявление»\n2️⃣ Укажите параметры: тип, кол-во, состояние, город, цена.\n3️⃣ Обязательно укажите номер телефона ☎️ (без него публикация невозможна).\n⚠️ Важно: По умолчанию мы выступаем посредником в сделке. Хотите продавать напрямую? Оформите платную подписку в боте.\nБот сформирует черновик и опубликует объявление на сайте!", 
                     keyboard: instrKb,
                     cancellationToken: cancellationToken);
                 break;
@@ -197,18 +210,19 @@ public class MaxBotService
                     {
                         Buttons = new[]
                         {
-                            new[] { new InlineKeyboardButton { Text = "Перейти к оплате", Type = ButtonType.Link, Url = paymentUrl } }
+                            new[] { new InlineKeyboardButton { Text = "Перейти к оплате", Type = ButtonType.Link, Url = paymentUrl } },
+                            new[] { new InlineKeyboardButton { Text = "Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
                         }
                     };
                     await _maxBotClient.Messages.SendMessageToUserAsync(
                         userId: user.Id,
-                        "Для оплаты подписки перейдите по ссылке ниже:",
+                        "Подписка для размещения объявлений с вашим номером телефон на сайте https://контейнеру.рф/ стоит 5000 рублей в месяц \nДля оплаты подписки перейдите по ссылке ниже:",
                         keyboard: payKb,
                         cancellationToken: cancellationToken);
                 }
                 break;
 
-                        case "create_ad":
+            case "create_ad":
                 user.State = BotState.WaitingForAdDetails;
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 
@@ -216,18 +230,18 @@ public class MaxBotService
                 {
                     Buttons = new[]
                     {
-                        new[] { new InlineKeyboardButton { Text = "Отмена", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                        new[] { new InlineKeyboardButton { Text = "Отмена / Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
                     }
                 };
                 
                 await _maxBotClient.Messages.SendMessageToUserAsync(
                     userId: user.Id, 
-                    "Пожалуйста, напишите характеристики контейнера (тип, цена, город продажи, состояние и т.д.):", 
+                    "Чтобы разместить информацию о ваших контейнерах на сайтах, отправьте, пожалуйста, в ответном сообщении характеристики контейнера (количество, тип, цена, город продажи, состояние и т.д.):", 
                     keyboard: cancelAdKb,
                     cancellationToken: cancellationToken);
                 break;
 
-                        case "change_phone":
+            case "change_phone":
                 user.State = BotState.WaitingForPhone;
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 
@@ -235,7 +249,7 @@ public class MaxBotService
                 {
                     Buttons = new[]
                     {
-                        new[] { new InlineKeyboardButton { Text = "Отмена", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                        new[] { new InlineKeyboardButton { Text = "Отмена / Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
                     }
                 };
                 
@@ -412,10 +426,18 @@ public class MaxBotService
             var missingFieldsList = string.Join(", ", allMissingFields);
             var responseText = $"Дополните Ваше предложение необходимой информацией ({missingFieldsList}) Так выйдем на сделку быстрее";
 
-            await _maxBotClient.Messages.ReplyToMessageAsync(
-                chatId: user.Id,
-                messageId: update.Message?.Mid ?? "",
+            var cancelKb = new InlineKeyboard
+            {
+                Buttons = new[]
+                {
+                    new[] { new InlineKeyboardButton { Text = "Отмена / Главное меню", Type = ButtonType.Callback, Payload = "back_to_main" } }
+                }
+            };
+
+            await _maxBotClient.Messages.SendMessageToUserAsync(
+                userId: user.Id,
                 text: responseText,
+                keyboard: cancelKb,
                 cancellationToken: cancellationToken);
             return;
         }
@@ -517,7 +539,8 @@ public class MaxBotService
         user.State = BotState.None;
         await _userRepository.UpdateAsync(user, cancellationToken);
         
-        await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Объявление успешно создано! (заглушка)", cancellationToken: cancellationToken);
+        await _maxBotClient.Messages.SendMessageToUserAsync(userId: user.Id, "Объявление успешно создано и отправлено на сайт!", cancellationToken: cancellationToken);
+        await SendMainMenuAsync(user, cancellationToken);
 
         // Record the message
         await HandleMessage(user, message.Text ?? "", cancellationToken);
