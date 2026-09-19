@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,12 @@
     <ProjectReference Include="..\ContainerRfBot.Core\ContainerRfBot.Core.csproj" />
     <ProjectReference Include="..\ContainerRfBot.Infrastructure\ContainerRfBot.Infrastructure.csproj" />
     <ProjectReference Include="..\ContainerRfBot.Bot\ContainerRfBot.Bot.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\.dockerignore">
+      <Link>.dockerignore</Link>
+    </Content>
   </ItemGroup>
 
 </Project>
